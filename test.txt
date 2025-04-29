@@ -1,0 +1,130 @@
+تمام، بما إن الكود والموديولات جاهزة، هشرحلك خطوة بخطوة إزاي تشغّل بروجيكت **Library Management System** وتربطه بسيرفر أوراكل بشكل صحيح. الشرح هيكون واضح وبسيط، وهنغطي كل التفاصيل من إعداد قاعدة البيانات لتشغيل التطبيق.
+
+### الخطوات لتشغيل البروجيكت وربطه بسيرفر أوراكل:
+
+#### 1. **تثبيت المتطلبات الأساسية**
+- **Python**: تأكد إن عندك Python 3.8 أو أحدث مثبت على جهازك. بإمكانك تحميله من [موقع Python الرسمي](https://www.python.org/).
+- **مكتبة oracledb**: دي المكتبة اللي هتستخدمها لربط Python بقاعدة بيانات أوراكل. ثبتها باستخدام الأمر:
+  ```bash
+  pip install oracledb
+  ```
+- **Tkinter**: عادةً بييجي مدمج مع Python، لكن لو مش موجود، بإمكانك تثبيته على أنظمة Linux مثلاً باستخدام:
+  ```bash
+  sudo apt-get install python3-tk
+  ```
+- **Oracle Instant Client**: لازم تثبت مكتبات Oracle Instant Client عشان مكتبة `oracledb` تقدر تتصل بالسيرفر. اتبع الخطوات دي:
+  - حمل الـ **Basic Package** أو **Basic Light Package** من [موقع Oracle Instant Client](https://www.oracle.com/database/technologies/instant-client.html) حسب نظام التشغيل بتاعك (Windows/Linux/Mac).
+  - فك الضغط عن الملف في مجلد، مثلاً: `/opt/oracle/instantclient_21_6` على Linux أو `C:\oracle\instantclient_21_6` على Windows.
+  - أضف مسار المجلد ده لمتغير البيئة:
+    - **Linux**: أضف المسار لـ `LD_LIBRARY_PATH`:
+      ```bash
+      export LD_LIBRARY_PATH=/opt/oracle/instantclient_21_6:$LD_LIBRARY_PATH
+      ```
+    - **Windows**: أضف المسار لـ `PATH` في إعدادات النظام.
+  - على Linux، ممكن تحتاج تثبت مكتبة إضافية زي `libaio`:
+    ```bash
+    sudo apt-get install libaio1
+    ```
+
+#### 2. **إعداد سيرفر أوراكل**
+- **تأكد إن السيرفر شغال**: لازم يكون عندك سيرفر أوراكل مثبت (مثل Oracle Database 19c أو 21c) سواء على جهازك المحلي أو على سيرفر بعيد. لو بتستخدم Oracle Autonomous Database في السحابة، هتحتاج تحمل ملف Wallet للربط.
+- **إنشاء قاعدة بيانات**:
+  - لو السيرفر محلي، سجّل دخول باستخدام أداة زي SQL*Plus أو SQL Developer باستخدام حساب المسؤول (مثل `SYS` أو `SYSTEM`).
+  - أنشئ مستخدم جديد للبروجيكت:
+    ```sql
+    CREATE USER library_user IDENTIFIED BY your_password;
+    GRANT CONNECT, RESOURCE, CREATE SESSION TO library_user;
+    GRANT CREATE TABLE, CREATE SEQUENCE, CREATE TRIGGER TO library_user;
+    ```
+  - لو بتستخدم قاعدة بيانات موجودة، تأكد إن المستخدم عنده الصلاحيات الكافية (مثل `CREATE TABLE`, `CREATE SEQUENCE`, `CREATE TRIGGER`).
+- **تكوين ملف tnsnames.ora (اختياري)**:
+  - لو بتتصل بالسيرفر باستخدام TNS، أضف إعدادات الاتصال في ملف `tnsnames.ora` في مجلد Oracle Instant Client (مثل `/opt/oracle/instantclient_21_6/network/admin`).
+  - مثال لإعداد TNS:
+    ```
+    ORCL =
+      (DESCRIPTION =
+        (ADDRESS = (PROTOCOL = TCP)(HOST = localhost)(PORT = 1521))
+        (CONNECT_DATA =
+          (SERVER = DEDICATED)
+          (SERVICE_NAME = ORCL)
+        )
+      )
+    ```
+
+#### 3. **تعديل إعدادات الاتصال في الكود**
+- افتح ملف `database.py` وعدّل بيانات الاتصال في دالة `connect` عشان تتطابق مع إعدادات سيرفر أوراكل بتاعك:
+  ```python
+  self.connection = oracledb.connect(
+      user="library_user",
+      password="your_password",
+      dsn="localhost:1521/ORCL"  # أو استبدلها بـ TNS alias مثل "ORCL"
+  )
+  ```
+- لو بتستخدم Oracle Autonomous Database، هتحتاج تضيف ملف Wallet وتعدّل الاتصال كده:
+  ```python
+  self.connection = oracledb.connect(
+      user="library_user",
+      password="your_password",
+      dsn="your_service_name",
+      config_dir="/path/to/wallet",
+      wallet_location="/path/to/wallet",
+      wallet_password="wallet_password"
+  )
+  ```
+- تأكد إن بيانات الاتصال (اسم المستخدم، كلمة المرور، DSN) صحيحة. لو في مشكلة، جرب اختبار الاتصال باستخدام SQL*Plus:
+  ```bash
+  sqlplus library_user/your_password@localhost:1521/ORCL
+  ```
+
+#### 4. **إعداد ملفات الكود**
+- تأكد إن كل ملفات البروجيكت (`main.py`, `database.py`, `book.py`, `customer.py`, `transaction.py`, `report.py`) موجودة في نفس المجلد.
+- تأكد إن ملف `main.py` بيعمل `import` للموديولات بشكل صحيح (زي اللي شرحناه قبل كده):
+  ```python
+  from database import Database
+  from book import Book
+  from customer import Customer
+  from transaction import Transaction
+  from report import Report
+  ```
+
+#### 5. **تشغيل قاعدة البيانات**
+- في ملف `database.py`، دالة `setup_database` بتعمل إنشاء الجداول، التسلسلات (sequences)، والمشغلات (triggers) تلقائيًا. لكن، لو قاعدة البيانات موجودة بالفعل وما عايزش تعمل إعداد من جديد، ممكن تعطل استدعاء `self.db.setup_database()` في `main.py` أو تتأكد إن الكود مش هيحاول ينشئ جداول موجودة بالفعل.
+- لو عايز تتحقق إن الجداول اتنشأت، سجّل دخول بـ SQL*Plus وشوف الجداول:
+  ```sql
+  SELECT table_name FROM user_tables;
+  ```
+
+#### 6. **تشغيل البروجيكت**
+- افتح طرفية (Terminal) أو موجه الأوامر (Command Prompt) في مجلد البروجيكت.
+- شغّل الملف `main.py` باستخدام الأمر:
+  ```bash
+  python main.py
+  ```
+- لو كل حاجة مضبوطة، هيفتح واجهة المستخدم الرسومية (Tkinter) وهتقدر تبدأ تستخدم التطبيق (إضافة كتب، عملاء، عمليات إعارة، تقارير، إلخ).
+
+#### 7. **اختبار التطبيق**
+- **اختبار الاتصال**: لو فتحت الواجهة وما ظهرتش أي رسائل خطأ، يبقى الاتصال بقاعدة البيانات ناجح.
+- **اختبار الوظائف**:
+  - جرب إضافة كتاب جديد في تبويب "Book Management".
+  - أضف عميل جديد في تبويب "Customer Management".
+  - اعمل عملية إعارة كتاب في تبويب "Transaction Management".
+  - أنشئ تقرير في تبويب "Reports".
+- لو ظهرت أي أخطاء، راجع ملف `library.log` (في نفس مجلد البروجيكت) عشان تشوف تفاصيل المشكلة.
+
+#### search results for how to connect and run a library management system project with Oracle server
+- **Web:1** - Instructions on how to set up and test a connection configuration for an Oracle database with OCI.
+- **Web:7** - Oracle Instant Client enables development and deployment of applications that connect to Oracle Database.
+- **Web:19** - Oracle Instant Client libraries require a Visual Studio redistributable with a 64-bit or 32-bit architecture to match Instant Client’s architecture.
+
+#### 8. **حل المشاكل الشائعة**
+- **خطأ الاتصال (ORA-12154)**: يعني إن الـ DSN أو ملف `tnsnames.ora` فيه مشكلة. تأكد إن اسم الخدمة (Service Name) والـ Host/Port صحيحين.
+- **خطأ مكتبة (Cannot load native library)**: تأكد إن Oracle Instant Client مثبت ومساره مضاف لـ `LD_LIBRARY_PATH` (Linux) أو `PATH` (Windows).
+- **خطأ صلاحيات**: لو ظهر خطأ زي "Insufficient Privileges"، تأكد إن المستخدم `library_user` عنده الصلاحيات الكافية (مثل `CREATE TABLE`, `CREATE SEQUENCE`).
+- لو ظهرت أي مشكلة، شارك تفاصيل الخطأ معايا وأنا هساعدك تحلها.
+
+### نصايح إضافية
+- **نسخ احتياطي**: اعمل نسخة احتياطية لقاعدة البيانات قبل تشغيل التطبيق، تحسبًا لأي أخطاء في إعداد الجداول.
+- **اختبار على بيئة محلية**: لو ممكن، جرب البروجيكت على قاعدة بيانات محلية (زي Oracle Database Express Edition) قبل ما تحول لسيرفر بعيد.
+- **توثيق الأخطاء**: لو واجهت مشاكل، دون رسالة الخطأ بالضبط وراجع ملف `library.log`.
+
+لو اتبعت الخطوات دي، البروجيكت المفروض يشتغل زي الحلاوة! لو عندك أي استفسار أو مشكلة أثناء التنفيذ، قولي وأنا هكون معاك خطوة بخطوة.

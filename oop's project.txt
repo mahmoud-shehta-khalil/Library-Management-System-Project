@@ -1,0 +1,53 @@
+Project Title:
+Library Management System
+Description:
+The Library Management System is a Python-based software application designed to manage the core operations of a library. It streamlines the handling of books, customers, and transactions by integrating a graphical user interface (GUI) and an Oracle Database backend. The system supports full CRUD operations and is structured modularly using Python modules to ensure maintainability and scalability.
+Key Features:
+📚 Book Management:
+·	Add new books to the inventory.
+·	Edit book details (title, author, genre, availability).
+·	Delete books from the system.
+·	Search for books by title, author, genre, or ISBN.
+👤 Customer Management:
+·	Add new customers.
+·	Update customer information (name, contact details, membership status).
+·	Delete customers.
+🔁 Transaction Management:
+·	Check out books to customers.
+·	Return books to the library.
+·	Track due dates and calculate overdue fines.
+·	Generate static and dynamic reports for transaction history.
+💡 Additional Features:
+·	Master-detail forms for customer-transaction and book-transaction relations.
+·	Navigation buttons to browse records (first, next, previous, last).
+·	Static and dynamic lists of values (e.g., genres, membership types).
+·	Auto-incrementing IDs using Oracle sequences.
+·	Triggers (both database and application level) to automate tasks.
+Architecture & Design:
+🧱 Database Layer (Oracle DB):
+·	All data is stored in an Oracle Database.
+·	Database tables cover books, customers, and transactions.
+·	Requirements such as triggers, sequences, reports, and form-based navigation are fulfilled as per the provided checklist.
+📦 Modular Python Design:
+The project is organized using a modular structure:
+·	book.py – Handles book-related logic. ---> ok
+·	customer.py – Manages customer-related operations. ---> ok
+·	transaction.py – Deals with check-out and returns. ---> ok
+·	database.py – Handles Oracle DB connectivity and queries. ---> ok
+·	report.py – Generates and calls reports. ---> ok
+·	main.py – Entry point of the application and GUI launcher. ---> ok
+🖼️ Graphical User Interface (GUI):
+·	Developed using Tkinter .
+·	User-friendly forms for adding, editing, deleting, and searching.
+·	Integrated navigation block with buttons to move between records.
+·	GUI-based interaction with backend reports and Oracle data.
+Database Requirements :
+·	Navigation Block
+·	Database triggers (at least one)
+·	Application triggers (as needed)
+·	Full CRUD operations (select, insert, update, delete)
+·	Form-based record browsing
+·	Master-detail form
+·	Static list items
+·	Static report (at least one), callable from form
+·	Dynamic list of values & auto-increment column using sequence
